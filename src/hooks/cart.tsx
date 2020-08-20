@@ -31,32 +31,23 @@ const CartProvider: React.FC = ({ children }) => {
   useEffect(() => {
     async function loadProducts(): Promise<void> {
       // TODO LOAD ITEMS FROM ASYNC STORAGE
-      try {
-        const carts = JSON.parse(await AsyncStorage.getItem('@GoMarketplace:carts'));
-
-        if (Array.isArray(carts))
-          setProducts(carts);
-      } catch(err) {
-        console.log(err);
-      }
+      const storageProducts = await AsyncStorage.getItem('@GoMarketplace:carts');
+    
+      if (storageProducts)
+        setProducts([...JSON.parse(storageProducts)]);
     }
 
     loadProducts();
   }, []);
 
   const addToCart = useCallback(async product => {
-    try {
-      setProducts([...products, product]);
-      const storage = JSON.parse(await AsyncStorage.getItem('@GoMarketplace:carts'));
-      const carts = Array.isArray(storage) ? storage : [];
+    const productExists = products.find(p => p.id === product.id);
+    const newProducts: Product[] = !!productExists ?
+    products.map(p => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p) :
+    [ ...products, { ...product, quantity: 1 } ];
 
-      if (Array.isArray(carts))
-        carts.push(product);
-      
-      await AsyncStorage.setItem('@GoMarketplace:carts', JSON.stringify(carts));
-    } catch(err) {
-      console.log(err);
-    }
+    setProducts(newProducts);
+    await AsyncStorage.setItem('@GoMarketplace:carts', JSON.stringify(newProducts));
   }, [products]);
 
   const increment = useCallback(async id => {
